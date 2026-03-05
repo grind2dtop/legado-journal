@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Legado — Living Journal</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      min-height: 100vh;
+      color: #f0ede8;
+    }
+    .screen { display: none; padding: 1.5rem 1rem 5rem; max-width: 680px; margin: 0 auto; }
+    .screen.active { display: block; }
+
+    /* HEADER */
+    .header { text-align: center; margin-bottom: 2rem; }
+    .header h1 { font-size: 2rem; letter-spacing: 0.05em; }
+    .header p { color: #a89fc0; font-size: 0.9rem; margin-top: 0.3rem; }
+
+    /* NAV */
+    .nav { display: flex; justify-content: center; gap: 0.8rem; margin-top: 1.2rem; flex-wrap: wrap; }
+    .nav-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 0.5rem 1.2rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-family: Georgia, serif;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .nav-btn.active { background: linear-gradient(135deg, #7C3AED, #DB2777); border-color: transparent; }
+
+    /* CAPTURE */
+    .capture-box {
+      background: rgba(255,255,255,0.07);
+      border-radius: 16px;
+      padding: 1.5rem;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .capture-hint { color: #c4b8d8; font-size: 0.88rem; margin-bottom: 1rem; line-height: 1.6; }
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      color: #f0ede8;
+      font-size: 1rem;
+      padding: 1rem;
+      line-height: 1.7;
+      resize: vertical;
+      outline: none;
+      font-family: Georgia, serif;
+    }
+    textarea::placeholder { color: #6b5f8a; }
+    .transform-btn {
+      margin-top: 1rem;
+      width: 100%;
+      background: linear-gradient(135deg, #7C3AED, #DB2777);
+      border: none;
+      color: #fff;
+      padding: 1rem;
+      border-radius: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-family: Georgia, serif;
+      letter-spacing: 0.03em;
+      transition: opacity 0.2s;
+    }
+    .transform-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .error-msg { color: #f87171; font-size: 0.85rem; margin-top: 0.5rem; }
+
+    /* PILLARS FILTER */
+    .pillars-filter { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+    .pillar-tag {
+      font-size: 0.72rem;
+      padding: 0.25rem 0.7rem;
+      border-radius: 10px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+      background: rgba(255,255,255,0.06);
+      color: #ccc;
+    }
+
+    /* ENTRY CARDS */
+    .entry-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 1.2rem;
+      margin-bottom: 0.8rem;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: background 0.2s;
+    }
+    .entry-card:hover { background: rgba(255,255,255,0.09); }
+    .entry-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+    .entry-card-title { font-weight: 600; font-size: 1rem; line-height: 1.3; }
+    .entry-card-date { font-size: 0.75rem; color: #8b7fa8; white-space: nowrap; }
+    .entry-card-preview { color: #9b8fb8; font-size: 0.85rem; margin: 0.5rem 0 0.6rem; line-height: 1.5; }
+    .tags { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+    .tag { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 10px; }
+    .mood-tag { font-size: 0.7rem; color: #6b5f8a; margin-left: auto; }
+
+    /* SINGLE ENTRY */
+    .back-btns { display: flex; gap: 0.8rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .back-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #ccc;
+      padding: 0.45rem 1rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: Georgia, serif;
+    }
+    .entry-full {
+      background: rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 1.8rem;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .entry-meta { color: #8b7fa8; font-size: 0.8rem; margin-bottom: 0.5rem; }
+    .entry-title { font-size: 1.5rem; line-height: 1.3; margin-bottom: 1rem; }
+    .entry-body { line-height: 1.9; font-size: 1rem; color: #e8e2f5; white-space: pre-wrap; }
+    details { margin-top: 1.5rem; }
+    summary { color: #6b5f8a; cursor: pointer; font-size: 0.8rem; }
+    .raw-text { color: #6b5f8a; font-size: 0.85rem; font-style: italic; margin-top: 0.5rem; line-height: 1.6; }
+    .delete-btn {
+      margin-top: 1.5rem;
+      background: transparent;
+      border: 1px solid #ef4444;
+      color: #ef4444;
+      padding: 0.4rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: Georgia, serif;
+    }
+
+    /* EMPTY STATE */
+    .empty { text-align: center; padding: 3rem 1rem; color: #6b5f8a; }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+    /* LOADING SPINNER */
+    .spinner {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* BOTTOM NAV */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(15,12,41,0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      justify-content: space-around;
+      padding: 0.7rem 0 1rem;
+      z-index: 100;
+    }
+    .bottom-nav-btn {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 0.2rem; background: none; border: none;
+      color: #6b5f8a; cursor: pointer; font-family: Georgia, serif;
+      font-size: 0.7rem; padding: 0.2rem 1rem;
+      transition: color 0.2s;
+    }
+    .bottom-nav-btn.active { color: #DB2777; }
+    .bottom-nav-btn span:first-child { font-size: 1.3rem; }
+
+    /* COUNT BADGE */
+    .count-badge {
+      background: rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 0.1rem 0.5rem;
+      font-size: 0.75rem;
+      margin-left: 0.4rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- CAPTURE SCREEN -->
+<div id="screen-capture" class="screen active">
+  <div class="header">
+    <div style="font-size:2.2rem">📖</div>
+    <h1>Legado</h1>
+    <p>Speak freely. Your words become your legacy.</p>
+  </div>
+  <div class="capture-box">
+    <p class="capture-hint">💬 Paste or type your raw thought — voice transcription, stream of consciousness, anything. Penelope will shape it into a journal entry in your authentic voice.</p>
+    <textarea id="raw-input" placeholder="What's on your heart today? A vision for your children, a trading insight, a moment of gratitude, a prayer — speak freely..."></textarea>
+    <p id="capture-error" class="error-msg" style="display:none"></p>
+    <button class="transform-btn" id="transform-btn" onclick="transformThought()">✨ Transform into Journal Entry</button>
+  </div>
+</div>
+
+<!-- JOURNAL SCREEN -->
+<div id="screen-journal" class="screen">
+  <div class="header">
+    <h1>📚 Your Journal</h1>
+    <p id="entry-count-label">Loading entries...</p>
+  </div>
+  <div class="pillars-filter" id="pillars-filter"></div>
+  <div id="entries-list"></div>
+</div>
+
+<!-- ENTRY SCREEN -->
+<div id="screen-entry" class="screen">
+  <div class="back-btns">
+    <button class="back-btn" onclick="showScreen('capture')">✍️ New Entry</button>
+    <button class="back-btn" onclick="showScreen('journal')">📚 Journal</button>
+  </div>
+  <div class="entry-full" id="entry-detail"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="bottom-nav-btn active" id="nav-capture" onclick="showScreen('capture')">
+    <span>✍️</span><span>Capture</span>
+  </button>
+  <button class="bottom-nav-btn" id="nav-journal" onclick="showScreen('journal')">
+    <span>📚</span><span>Journal</span>
+  </button>
+</nav>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, orderBy, query }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ============================================================
+  // 🔑 REPLACE THIS BLOCK WITH YOUR FIREBASE CONFIG KEYS
+  // ============================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyC33fM608H-FWhKK0Q0fujRR4NB0X42GZw",
+    authDomain: "legado-journal.firebaseapp.com",
+    projectId: "legado-journal",
+    storageBucket: "legado-journal.firebasestorage.app",
+    messagingSenderId: "673553727626",
+    appId: "1:673553727626:web:70f54b99f55fb0d2f62d73"
+  };
+  // ============================================================
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const PILLARS = [
+    { id: 1, label: "Self-Care & Growth", icon: "🙏", color: "#7C3AED" },
+    { id: 2, label: "Fatherhood",          icon: "👨‍👧‍👦", color: "#059669" },
+    { id: 3, label: "Swing Trading",       icon: "📈", color: "#0284C7" },
+    { id: 4, label: "Keredan",             icon: "🏠", color: "#D97706" },
+    { id: 5, label: "AI & Automation",     icon: "🤖", color: "#DB2777" },
+  ];
+
+  const SYSTEM_PROMPT = `You are Roldan's personal journal AI named Penelope. Roldan is a father of 3 boys with a baby girl on the way, husband to Carissa, swing trader, real estate entrepreneur (Keredan Home Solutions — properties in Jacksonville FL and Puerto Rico), and a man deeply rooted in faith, family, and personal growth. He recently returned to Jacksonville, Florida after 15 months in Bishkek, Kyrgyzstan. He is Puerto Rican, bilingual (Spanish/English), a Navy veteran, and an avid 5K/10K runner.
+
+Transform his raw spoken thoughts into a rich, first-person autobiography-style journal entry.
+
+Rules:
+- Write in first person as Roldan
+- Preserve his authentic voice, warmth, cultural identity, and spiritual depth
+- Never over-polish — keep it human, personal, real
+- Expand naturally but never invent specifics he didn't mention
+- The entry should read like a meaningful page from a memoir
+- End with a brief 1-sentence reflection or intention
+- Identify which of his 5 pillars this relates to: 1) Self-Care & Personal Growth, 2) Fatherhood, 3) Swing Trading, 4) Keredan Home Solutions, 5) AI & Automation
+
+Respond ONLY with a JSON object — no markdown, no backticks:
+{
+  "title": "short evocative title",
+  "entry": "the full journal entry",
+  "pillars": [1, 2],
+  "mood": "one word emotional tone"
+}`;
+
+  let allEntries = [];
+  let activeFilter = null;
+
+  // ── LOAD ENTRIES ──
+  async function loadEntries() {
+    try {
+      const q = query(collection(db, "entries"), orderBy("date", "desc"));
+      const snap = await getDocs(q);
+      allEntries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch(e) {
+      allEntries = [];
+    }
+    renderJournal();
+  }
+
+  // ── RENDER JOURNAL ──
+  function renderJournal() {
+    const label = document.getElementById("entry-count-label");
+    label.textContent = `${allEntries.length} ${allEntries.length === 1 ? "entry" : "entries"}`;
+
+    // Pillar filters
+    const filterEl = document.getElementById("pillars-filter");
+    filterEl.innerHTML = `<span class="pillar-tag ${!activeFilter ? 'active' : ''}" onclick="setFilter(null)" style="${!activeFilter ? 'background:rgba(255,255,255,0.2);color:#fff' : ''}">All</span>`;
+    PILLARS.forEach(p => {
+      filterEl.innerHTML += `<span class="pillar-tag" onclick="setFilter(${p.id})"
+        style="background:${activeFilter===p.id ? p.color+'55' : 'rgba(255,255,255,0.06)'};
+               color:${activeFilter===p.id ? '#fff' : '#ccc'};
+               border-color:${activeFilter===p.id ? p.color : 'transparent'}">
+        ${p.icon} ${p.label}</span>`;
+    });
+
+    const list = document.getElementById("entries-list");
+    const filtered = activeFilter ? allEntries.filter(e => e.pillars?.includes(activeFilter)) : allEntries;
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">📖</div><p>${allEntries.length === 0 ? "Your journal awaits its first entry." : "No entries for this pillar yet."}</p></div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map(e => {
+      const tags = (e.pillars || []).map(pid => {
+        const p = PILLARS.find(x => x.id === pid);
+        return p ? `<span class="tag" style="background:${p.color}33;color:${p.color}">${p.icon} ${p.label}</span>` : '';
+      }).join('');
+      const preview = (e.entry || '').slice(0, 120) + '...';
+      const date = new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      return `<div class="entry-card" onclick="showEntry('${e.id}')">
+        <div class="entry-card-header">
+          <span class="entry-card-title">${e.title}</span>
+          <span class="entry-card-date">${date}</span>
+        </div>
+        <p class="entry-card-preview">${preview}</p>
+        <div class="tags">${tags}<span class="mood-tag">${e.mood || ''}</span></div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── SHOW ENTRY ──
+  window.showEntry = function(id) {
+    const e = allEntries.find(x => x.id === id);
+    if (!e) return;
+    const tags = (e.pillars || []).map(pid => {
+      const p = PILLARS.find(x => x.id === pid);
+      return p ? `<span class="tag" style="background:${p.color}33;color:${p.color};margin-right:4px">${p.icon} ${p.label}</span>` : '';
+    }).join('');
+    const date = new Date(e.date).toLocaleDateString("en-US", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
+    document.getElementById("entry-detail").innerHTML = `
+      <p class="entry-meta">${date} · ${e.mood || ''}</p>
+      <h2 class="entry-title">${e.title}</h2>
+      <div style="margin-bottom:1.2rem">${tags}</div>
+      <div class="entry-body">${e.entry}</div>
+      <details><summary>View original raw thought</summary>
+        <p class="raw-text">${e.raw}</p>
+      </details>
+      <button class="delete-btn" onclick="deleteEntry('${e.id}')">🗑 Delete entry</button>`;
+    showScreen('entry');
+  };
+
+  // ── DELETE ENTRY ──
+  window.deleteEntry = async function(id) {
+    if (!confirm("Delete this entry permanently?")) return;
+    try {
+      await deleteDoc(doc(db, "entries", id));
+      allEntries = allEntries.filter(e => e.id !== id);
+      renderJournal();
+      showScreen('journal');
+    } catch(e) { alert("Could not delete entry. Please try again."); }
+  };
+
+  // ── SET FILTER ──
+  window.setFilter = function(pid) {
+    activeFilter = pid;
+    renderJournal();
+  };
+
+  // ── TRANSFORM THOUGHT ──
+  window.transformThought = async function() {
+    const raw = document.getElementById("raw-input").value.trim();
+    if (!raw) return;
+    const btn = document.getElementById("transform-btn");
+    const errEl = document.getElementById("capture-error");
+    errEl.style.display = "none";
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Penelope is writing your entry...';
+
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: raw }]
+        })
+      });
+      const data = await res.json();
+      const text = (data.content || []).map(b => b.text || "").join("");
+      const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+
+      const entry = {
+        date: new Date().toISOString(),
+        raw,
+        title: parsed.title,
+        entry: parsed.entry,
+        pillars: parsed.pillars,
+        mood: parsed.mood
+      };
+
+      const docRef = await addDoc(collection(db, "entries"), entry);
+      const saved = { id: docRef.id, ...entry };
+      allEntries.unshift(saved);
+      document.getElementById("raw-input").value = "";
+      renderJournal();
+      showEntry(saved.id);
+    } catch(e) {
+      errEl.textContent = "Something went wrong. Please check your connection and try again.";
+      errEl.style.display = "block";
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = "✨ Transform into Journal Entry";
+  };
+
+  // ── SCREEN NAVIGATION ──
+  window.showScreen = function(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.bottom-nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`screen-${name}`).classList.add('active');
+    const navBtn = document.getElementById(`nav-${name}`);
+    if (navBtn) navBtn.classList.add('active');
+    if (name === 'journal') loadEntries();
+    window.scrollTo(0, 0);
+  };
+
+  // ── INIT ──
+  loadEntries();
+</script>
+</body>
+</html>
