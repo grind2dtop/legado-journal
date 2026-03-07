@@ -23,20 +23,84 @@
     .header h1 { font-size: 2rem; letter-spacing: 0.05em; }
     .header p { color: #a89fc0; font-size: 0.9rem; margin-top: 0.3rem; }
 
-    /* NAV */
-    .nav { display: flex; justify-content: center; gap: 0.8rem; margin-top: 1.2rem; flex-wrap: wrap; }
-    .nav-btn {
-      background: rgba(255,255,255,0.1);
+    /* SETUP SCREEN */
+    .setup-card {
+      background: rgba(255,255,255,0.07);
+      border-radius: 16px;
+      padding: 2rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      margin-top: 1rem;
+    }
+    .setup-card h2 { font-size: 1.3rem; margin-bottom: 0.5rem; }
+    .setup-card p { color: #a89fc0; font-size: 0.9rem; line-height: 1.7; margin-bottom: 1.2rem; }
+    .setup-input {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      color: #f0ede8;
+      font-size: 0.95rem;
+      padding: 0.9rem 1rem;
+      outline: none;
+      font-family: Georgia, serif;
+      letter-spacing: 0.05em;
+    }
+    .setup-input::placeholder { color: #6b5f8a; letter-spacing: 0; }
+    .setup-note {
+      color: #6b5f8a;
+      font-size: 0.78rem;
+      margin-top: 0.6rem;
+      line-height: 1.5;
+    }
+
+    /* BUTTONS */
+    .primary-btn {
+      margin-top: 1rem;
+      width: 100%;
+      background: linear-gradient(135deg, #7C3AED, #DB2777);
+      border: none;
       color: #fff;
-      padding: 0.5rem 1.2rem;
-      border-radius: 20px;
+      padding: 1rem;
+      border-radius: 10px;
+      font-size: 1rem;
       cursor: pointer;
       font-family: Georgia, serif;
-      font-size: 0.9rem;
-      transition: all 0.2s;
+      letter-spacing: 0.03em;
+      transition: opacity 0.2s;
     }
-    .nav-btn.active { background: linear-gradient(135deg, #7C3AED, #DB2777); border-color: transparent; }
+    .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .back-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #ccc;
+      padding: 0.45rem 1rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: Georgia, serif;
+    }
+    .delete-btn {
+      margin-top: 1.5rem;
+      background: transparent;
+      border: 1px solid #ef4444;
+      color: #ef4444;
+      padding: 0.4rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: Georgia, serif;
+    }
+    .reset-key-btn {
+      background: transparent;
+      border: none;
+      color: #6b5f8a;
+      font-size: 0.78rem;
+      cursor: pointer;
+      font-family: Georgia, serif;
+      text-decoration: underline;
+      margin-top: 0.5rem;
+      display: block;
+    }
 
     /* CAPTURE */
     .capture-box {
@@ -61,21 +125,6 @@
       font-family: Georgia, serif;
     }
     textarea::placeholder { color: #6b5f8a; }
-    .transform-btn {
-      margin-top: 1rem;
-      width: 100%;
-      background: linear-gradient(135deg, #7C3AED, #DB2777);
-      border: none;
-      color: #fff;
-      padding: 1rem;
-      border-radius: 10px;
-      font-size: 1rem;
-      cursor: pointer;
-      font-family: Georgia, serif;
-      letter-spacing: 0.03em;
-      transition: opacity 0.2s;
-    }
-    .transform-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .error-msg { color: #f87171; font-size: 0.85rem; margin-top: 0.5rem; }
 
     /* PILLARS FILTER */
@@ -112,16 +161,6 @@
 
     /* SINGLE ENTRY */
     .back-btns { display: flex; gap: 0.8rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-    .back-btn {
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.3);
-      color: #ccc;
-      padding: 0.45rem 1rem;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      font-family: Georgia, serif;
-    }
     .entry-full {
       background: rgba(255,255,255,0.06);
       border-radius: 16px;
@@ -134,23 +173,12 @@
     details { margin-top: 1.5rem; }
     summary { color: #6b5f8a; cursor: pointer; font-size: 0.8rem; }
     .raw-text { color: #6b5f8a; font-size: 0.85rem; font-style: italic; margin-top: 0.5rem; line-height: 1.6; }
-    .delete-btn {
-      margin-top: 1.5rem;
-      background: transparent;
-      border: 1px solid #ef4444;
-      color: #ef4444;
-      padding: 0.4rem 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.8rem;
-      font-family: Georgia, serif;
-    }
 
     /* EMPTY STATE */
     .empty { text-align: center; padding: 3rem 1rem; color: #6b5f8a; }
     .empty-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
 
-    /* LOADING SPINNER */
+    /* SPINNER */
     .spinner {
       display: inline-block;
       width: 18px; height: 18px;
@@ -184,21 +212,28 @@
     }
     .bottom-nav-btn.active { color: #DB2777; }
     .bottom-nav-btn span:first-child { font-size: 1.3rem; }
-
-    /* COUNT BADGE */
-    .count-badge {
-      background: rgba(255,255,255,0.15);
-      border-radius: 10px;
-      padding: 0.1rem 0.5rem;
-      font-size: 0.75rem;
-      margin-left: 0.4rem;
-    }
   </style>
 </head>
 <body>
 
+<!-- SETUP SCREEN -->
+<div id="screen-setup" class="screen active">
+  <div class="header">
+    <div style="font-size:2.2rem">📖</div>
+    <h1>Legado</h1>
+    <p>Your Living Journal</p>
+  </div>
+  <div class="setup-card">
+    <h2>🔑 One-Time Setup</h2>
+    <p>To power your journal's AI transformation, enter your Anthropic API key below. It will be saved privately on this device only — never stored in the cloud or visible to anyone else.</p>
+    <input type="password" class="setup-input" id="api-key-input" placeholder="sk-ant-..." />
+    <p class="setup-note">🔒 Your key is stored only in your browser's local storage on this device. It is never sent anywhere except directly to Anthropic to process your entries.</p>
+    <button class="primary-btn" onclick="saveApiKey()">Save & Open Legado →</button>
+  </div>
+</div>
+
 <!-- CAPTURE SCREEN -->
-<div id="screen-capture" class="screen active">
+<div id="screen-capture" class="screen">
   <div class="header">
     <div style="font-size:2.2rem">📖</div>
     <h1>Legado</h1>
@@ -208,7 +243,8 @@
     <p class="capture-hint">💬 Paste or type your raw thought — voice transcription, stream of consciousness, anything. Penelope will shape it into a journal entry in your authentic voice.</p>
     <textarea id="raw-input" placeholder="What's on your heart today? A vision for your children, a trading insight, a moment of gratitude, a prayer — speak freely..."></textarea>
     <p id="capture-error" class="error-msg" style="display:none"></p>
-    <button class="transform-btn" id="transform-btn" onclick="transformThought()">✨ Transform into Journal Entry</button>
+    <button class="primary-btn" id="transform-btn" onclick="transformThought()">✨ Transform into Journal Entry</button>
+    <button class="reset-key-btn" onclick="resetApiKey()">Reset API key</button>
   </div>
 </div>
 
@@ -232,7 +268,7 @@
 </div>
 
 <!-- BOTTOM NAV -->
-<nav class="bottom-nav">
+<nav class="bottom-nav" id="bottom-nav" style="display:none">
   <button class="bottom-nav-btn active" id="nav-capture" onclick="showScreen('capture')">
     <span>✍️</span><span>Capture</span>
   </button>
@@ -251,7 +287,7 @@
   // 🔑 REPLACE THIS BLOCK WITH YOUR FIREBASE CONFIG KEYS
   // ============================================================
   const firebaseConfig = {
-    apiKey: "AIzaSyC33fM608H-FWhKK0Q0fujRR4NB0X42GZw",
+    apiKey: "AIzaSyCx5GwMbTL7wCoC4TcXPLGXxvrAt7ewf7Q",
     authDomain: "legado-journal.firebaseapp.com",
     projectId: "legado-journal",
     storageBucket: "legado-journal.firebasestorage.app",
@@ -295,15 +331,42 @@ Respond ONLY with a JSON object — no markdown, no backticks:
   let allEntries = [];
   let activeFilter = null;
 
+  // ── API KEY MANAGEMENT ──
+  window.saveApiKey = function() {
+    const key = document.getElementById("api-key-input").value.trim();
+    if (!key || !key.startsWith("sk-ant-")) {
+      alert("Please enter a valid Anthropic API key starting with sk-ant-");
+      return;
+    }
+    localStorage.setItem("legado_anthropic_key", key);
+    document.getElementById("bottom-nav").style.display = "flex";
+    showScreen("capture");
+    loadEntries();
+  };
+
+  window.resetApiKey = function() {
+    if (confirm("Reset your API key? You'll need to enter it again.")) {
+      localStorage.removeItem("legado_anthropic_key");
+      document.getElementById("bottom-nav").style.display = "none";
+      showScreen("setup");
+    }
+  };
+
+  // ── INIT ──
+  const savedKey = localStorage.getItem("legado_anthropic_key");
+  if (savedKey) {
+    document.getElementById("bottom-nav").style.display = "flex";
+    showScreen("capture");
+    loadEntries();
+  }
+
   // ── LOAD ENTRIES ──
   async function loadEntries() {
     try {
       const q = query(collection(db, "entries"), orderBy("date", "desc"));
       const snap = await getDocs(q);
       allEntries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch(e) {
-      allEntries = [];
-    }
+    } catch(e) { allEntries = []; }
     renderJournal();
   }
 
@@ -312,9 +375,9 @@ Respond ONLY with a JSON object — no markdown, no backticks:
     const label = document.getElementById("entry-count-label");
     label.textContent = `${allEntries.length} ${allEntries.length === 1 ? "entry" : "entries"}`;
 
-    // Pillar filters
     const filterEl = document.getElementById("pillars-filter");
-    filterEl.innerHTML = `<span class="pillar-tag ${!activeFilter ? 'active' : ''}" onclick="setFilter(null)" style="${!activeFilter ? 'background:rgba(255,255,255,0.2);color:#fff' : ''}">All</span>`;
+    filterEl.innerHTML = `<span class="pillar-tag" onclick="setFilter(null)"
+      style="${!activeFilter ? 'background:rgba(255,255,255,0.2);color:#fff' : ''}">All</span>`;
     PILLARS.forEach(p => {
       filterEl.innerHTML += `<span class="pillar-tag" onclick="setFilter(${p.id})"
         style="background:${activeFilter===p.id ? p.color+'55' : 'rgba(255,255,255,0.06)'};
@@ -327,7 +390,8 @@ Respond ONLY with a JSON object — no markdown, no backticks:
     const filtered = activeFilter ? allEntries.filter(e => e.pillars?.includes(activeFilter)) : allEntries;
 
     if (filtered.length === 0) {
-      list.innerHTML = `<div class="empty"><div class="empty-icon">📖</div><p>${allEntries.length === 0 ? "Your journal awaits its first entry." : "No entries for this pillar yet."}</p></div>`;
+      list.innerHTML = `<div class="empty"><div class="empty-icon">📖</div>
+        <p>${allEntries.length === 0 ? "Your journal awaits its first entry." : "No entries for this pillar yet."}</p></div>`;
       return;
     }
 
@@ -337,7 +401,7 @@ Respond ONLY with a JSON object — no markdown, no backticks:
         return p ? `<span class="tag" style="background:${p.color}33;color:${p.color}">${p.icon} ${p.label}</span>` : '';
       }).join('');
       const preview = (e.entry || '').slice(0, 120) + '...';
-      const date = new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const date = new Date(e.date).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
       return `<div class="entry-card" onclick="showEntry('${e.id}')">
         <div class="entry-card-header">
           <span class="entry-card-title">${e.title}</span>
@@ -378,7 +442,7 @@ Respond ONLY with a JSON object — no markdown, no backticks:
       allEntries = allEntries.filter(e => e.id !== id);
       renderJournal();
       showScreen('journal');
-    } catch(e) { alert("Could not delete entry. Please try again."); }
+    } catch(e) { alert("Could not delete. Please try again."); }
   };
 
   // ── SET FILTER ──
@@ -391,6 +455,9 @@ Respond ONLY with a JSON object — no markdown, no backticks:
   window.transformThought = async function() {
     const raw = document.getElementById("raw-input").value.trim();
     if (!raw) return;
+    const apiKey = localStorage.getItem("legado_anthropic_key");
+    if (!apiKey) { resetApiKey(); return; }
+
     const btn = document.getElementById("transform-btn");
     const errEl = document.getElementById("capture-error");
     errEl.style.display = "none";
@@ -400,7 +467,12 @@ Respond ONLY with a JSON object — no markdown, no backticks:
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-request-header": "true"
+        },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
           max_tokens: 1000,
@@ -409,6 +481,7 @@ Respond ONLY with a JSON object — no markdown, no backticks:
         })
       });
       const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
       const text = (data.content || []).map(b => b.text || "").join("");
       const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
 
@@ -430,6 +503,7 @@ Respond ONLY with a JSON object — no markdown, no backticks:
     } catch(e) {
       errEl.textContent = "Something went wrong. Please check your connection and try again.";
       errEl.style.display = "block";
+      console.error(e);
     }
 
     btn.disabled = false;
@@ -447,8 +521,6 @@ Respond ONLY with a JSON object — no markdown, no backticks:
     window.scrollTo(0, 0);
   };
 
-  // ── INIT ──
-  loadEntries();
 </script>
 </body>
 </html>
