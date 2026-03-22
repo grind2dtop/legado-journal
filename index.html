@@ -262,8 +262,8 @@ Respond ONLY with valid JSON, no markdown, no backticks:
   }
 
 function exportEntries() {
-    if (!allEntries.length) { alert("No entries to export yet."); return; }
-    const data = { exportDate: new Date().toISOString(), totalEntries: allEntries.length, entries: allEntries };
+    if (!Entries.length) { alert("No entries to export yet."); return; }
+    const data = { exportDate: new Date().toISOString(), totalEntries: entries.length, entries: entries };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
