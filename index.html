@@ -399,7 +399,7 @@ Respond ONLY with valid JSON, no markdown, no backticks:
     btn.innerHTML = '<span class="spinner"></span>Penelope is writing your entry...';
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("https://legado-proxy.roldan-crespo-ai.workers.dev/v1/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
