@@ -187,7 +187,8 @@
 <div id="screen-journal" class="screen">
   <div class="header">
     <h1>📚 Your Journal</h1>
-    <p id="entry-count"></p>
+   <p id="entry-count"></p>
+<button onclick="exportEntries()" style="margin-top:0.8rem;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#a89fc0;padding:0.4rem 1rem;border-radius:20px;cursor:pointer;font-family:Georgia,serif;font-size:0.8rem;">⬇️ Export Backup (.json)</button>
   </div>
   <div class="pillars-filter" id="pillars-filter"></div>
   <div id="entries-list"></div>
@@ -259,7 +260,21 @@ Respond ONLY with valid JSON, no markdown, no backticks:
     loadEntries();
   }
 
-  function resetSetup() {
+function exportEntries() {
+    if (!allEntries.length) { alert("No entries to export yet."); return; }
+    const data = { exportDate: new Date().toISOString(), totalEntries: allEntries.length, entries: allEntries };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `legado-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function resetSetup() {  
     if (!confirm("Reset your API key?")) return;
     localStorage.removeItem("legado_akey");
     document.getElementById("bottom-nav").style.display = "none";
