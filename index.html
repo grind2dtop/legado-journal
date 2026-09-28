@@ -424,8 +424,8 @@ function exportEntries() {
           "anthropic-dangerous-request-header": "true"
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
+          model: "claude-sonnet-5",
+          max_tokens: 2000,
           system: PROMPT,
           messages: [{ role:"user", content:raw }]
         })
