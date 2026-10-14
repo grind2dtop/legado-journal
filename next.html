@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:;">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Legado — Living Journal</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      min-height: 100vh;
+      color: #f0ede8;
+    }
+    .screen { display: none; padding: 1.5rem 1rem 5rem; max-width: 680px; margin: 0 auto; }
+    .screen.active { display: block; }
+    .header { text-align: center; margin-bottom: 2rem; }
+    .header h1 { font-size: 2rem; letter-spacing: 0.05em; }
+    .header p { color: #a89fc0; font-size: 0.9rem; margin-top: 0.3rem; }
+
+    .card {
+      background: rgba(255,255,255,0.07);
+      border-radius: 16px;
+      padding: 1.8rem;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .card h2 { font-size: 1.3rem; margin-bottom: 0.5rem; }
+    .card p { color: #a89fc0; font-size: 0.9rem; line-height: 1.7; margin-bottom: 1rem; }
+
+    input[type="password"], input[type="text"], input[type="email"], textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      color: #f0ede8;
+      font-size: 0.95rem;
+      padding: 0.9rem 1rem;
+      outline: none;
+      font-family: Georgia, serif;
+      margin-bottom: 0.5rem;
+    }
+    textarea { min-height: 200px; font-size: 1rem; line-height: 1.7; resize: vertical; }
+    input::placeholder, textarea::placeholder { color: #6b5f8a; }
+
+    .note { color: #6b5f8a; font-size: 0.78rem; line-height: 1.5; margin-bottom: 0.5rem; }
+
+    .primary-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #7C3AED, #DB2777);
+      border: none; color: #fff;
+      padding: 1rem; border-radius: 10px;
+      font-size: 1rem; cursor: pointer;
+      font-family: Georgia, serif;
+      letter-spacing: 0.03em;
+      margin-top: 0.5rem;
+      transition: opacity 0.2s;
+    }
+    .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .ghost-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #ccc; padding: 0.45rem 1rem;
+      border-radius: 20px; cursor: pointer;
+      font-size: 0.85rem; font-family: Georgia, serif;
+    }
+    .danger-btn {
+      background: transparent;
+      border: 1px solid #ef4444;
+      color: #ef4444; padding: 0.4rem 1rem;
+      border-radius: 8px; cursor: pointer;
+      font-size: 0.8rem; font-family: Georgia, serif;
+      margin-top: 1.5rem;
+    }
+    .link-btn {
+      background: none; border: none;
+      color: #6b5f8a; font-size: 0.78rem;
+      cursor: pointer; font-family: Georgia, serif;
+      text-decoration: underline;
+      display: block; margin-top: 0.8rem;
+    }
+
+    .error-msg { color: #f87171; font-size: 0.85rem; margin-top: 0.5rem; }
+    .hint { color: #c4b8d8; font-size: 0.88rem; margin-bottom: 1rem; line-height: 1.6; }
+
+    .pillars-filter { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+    .ptag {
+      font-size: 0.72rem; padding: 0.25rem 0.7rem;
+      border-radius: 10px; cursor: pointer;
+      border: 1px solid transparent;
+      background: rgba(255,255,255,0.06); color: #ccc;
+      transition: all 0.2s;
+    }
+
+    .entry-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px; padding: 1.2rem;
+      margin-bottom: 0.8rem; cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: background 0.2s;
+    }
+    .entry-card:hover { background: rgba(255,255,255,0.09); }
+    .ec-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+    .ec-title { font-weight: 600; font-size: 1rem; line-height: 1.3; }
+    .ec-date { font-size: 0.75rem; color: #8b7fa8; white-space: nowrap; }
+    .ec-preview { color: #9b8fb8; font-size: 0.85rem; margin: 0.5rem 0 0.6rem; line-height: 1.5; }
+    .tags { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+    .tag { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 10px; }
+    .mood { font-size: 0.7rem; color: #6b5f8a; margin-left: auto; }
+
+    .back-row { display: flex; gap: 0.8rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .entry-meta { color: #8b7fa8; font-size: 0.8rem; margin-bottom: 0.5rem; }
+    .entry-title { font-size: 1.5rem; line-height: 1.3; margin-bottom: 1rem; }
+    .entry-body { line-height: 1.9; font-size: 1rem; color: #e8e2f5; white-space: pre-wrap; }
+    details { margin-top: 1.5rem; }
+    summary { color: #6b5f8a; cursor: pointer; font-size: 0.8rem; }
+    .raw-text { color: #6b5f8a; font-size: 0.85rem; font-style: italic; margin-top: 0.5rem; line-height: 1.6; }
+
+    .empty { text-align: center; padding: 3rem 1rem; color: #6b5f8a; }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+    .spinner {
+      display: inline-block; width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: rgba(15,12,41,0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: none; justify-content: space-around;
+      padding: 0.7rem 0 1rem; z-index: 100;
+    }
+    .bnav-btn {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 0.2rem; background: none; border: none;
+      color: #6b5f8a; cursor: pointer;
+      font-family: Georgia, serif; font-size: 0.7rem;
+      padding: 0.2rem 1rem; transition: color 0.2s;
+    }
+    .bnav-btn.active { color: #DB2777; }
+    .bnav-btn span:first-child { font-size: 1.3rem; }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="screen-login" class="screen active">
+  <div class="header">
+    <div style="font-size:2.2rem">📖</div>
+    <h1>Legado</h1>
+    <p>Your Living Journal</p>
+  </div>
+  <div class="card">
+    <h2>🔐 Sign In</h2>
+    <p>Your journal is private. Sign in to open it.</p>
+    <button class="primary-btn" id="google-btn" onclick="googleLogin()" style="margin-top:0">Continue with Google</button>
+    <p class="note" style="text-align:center;margin:0.8rem 0 0.4rem">or use email and password</p>
+    <input type="email" id="login-email" placeholder="Email" autocomplete="username" />
+    <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="primary-btn" id="login-btn" onclick="doLogin()">Sign In →</button>
+    <p id="login-error" class="error-msg" style="display:none"></p>
+    <p id="login-info" class="note" style="display:none"></p>
+    <button class="link-btn" onclick="forgotPassword()">Forgot password?</button>
+  </div>
+</div>
+
+<!-- SETUP SCREEN -->
+<div id="screen-setup" class="screen">
+  <div class="header">
+    <div style="font-size:2.2rem">📖</div>
+    <h1>Legado</h1>
+    <p>Your Living Journal</p>
+  </div>
+  <div class="card">
+    <h2>🔑 One-Time Setup</h2>
+    <p>Enter your Anthropic API key to power Legado's AI. It saves privately on this device only — never in the code or cloud.</p>
+    <input type="password" id="anthropic-key-input" placeholder="sk-ant-..." />
+    <p class="note">🔒 Stored only in your browser's local storage. Never visible to anyone else.</p>
+    <button class="primary-btn" onclick="saveSetup()">Save & Open Legado →</button>
+    <p id="setup-error" class="error-msg" style="display:none"></p>
+  </div>
+</div>
+
+<!-- CAPTURE SCREEN -->
+<div id="screen-capture" class="screen">
+  <div class="header">
+    <div style="font-size:2.2rem">📖</div>
+    <h1>Legado</h1>
+    <p>Speak freely. Your words become your legacy.</p>
+  </div>
+  <div class="card">
+    <p class="hint">💬 Paste or type your raw thought — voice transcription, stream of consciousness, anything. Penelope will shape it into a journal entry in your authentic voice.</p>
+    <textarea id="raw-input" placeholder="What's on your heart today? A vision for your children, a trading insight, a moment of gratitude, a prayer — speak freely..."></textarea>
+    <p id="capture-error" class="error-msg" style="display:none"></p>
+    <button class="primary-btn" id="transform-btn" onclick="transformThought()">✨ Transform into Journal Entry</button>
+    <button class="link-btn" onclick="resetSetup()">Reset API key</button>
+    <button class="link-btn" onclick="signOut()">Sign out</button>
+  </div>
+</div>
+
+<!-- JOURNAL SCREEN -->
+<div id="screen-journal" class="screen">
+  <div class="header">
+    <h1>📚 Your Journal</h1>
+   <p id="entry-count"></p>
+   <p id="user-line" class="note"></p>
+<button onclick="exportEntries()" style="margin-top:0.8rem;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#a89fc0;padding:0.4rem 1rem;border-radius:20px;cursor:pointer;font-family:Georgia,serif;font-size:0.8rem;">⬇️ Export Backup (.json)</button>
+<button onclick="migrateOld()" style="margin-top:0.8rem;margin-left:0.4rem;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#a89fc0;padding:0.4rem 1rem;border-radius:20px;cursor:pointer;font-family:Georgia,serif;font-size:0.8rem;">⬆️ Copy old entries (one-time)</button>
+<p id="journal-msg" class="note" style="margin-top:0.6rem"></p>
+  </div>
+  <div class="pillars-filter" id="pillars-filter"></div>
+  <p id="journal-error" class="error-msg" style="display:none;text-align:center"></p>
+  <div id="entries-list"></div>
+</div>
+
+<!-- ENTRY SCREEN -->
+<div id="screen-entry" class="screen">
+  <div class="back-row">
+    <button class="ghost-btn" onclick="show('capture')">✍️ New Entry</button>
+    <button class="ghost-btn" onclick="show('journal')">📚 Journal</button>
+  </div>
+  <div class="card" id="entry-detail"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="bnav-btn active" id="nav-capture" onclick="show('capture')">
+    <span>✍️</span><span>Capture</span>
+  </button>
+  <button class="bnav-btn" id="nav-journal" onclick="show('journal')">
+    <span>📚</span><span>Journal</span>
+  </button>
+</nav>
+
+<script>
+  // ── CONFIG ──────────────────────────────────────────────
+  const FB_PROJECT = "legado-journal";
+  const FB_API_KEY = "AIzaSyCx5GwMbTL7wCoC4TcXPLGXxvrAt7ewf7Q"; // ← replace with your Firebase key
+  const FS_ROOT    = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents`;
+  const APP_VERSION = "2.0";
+
+  const PILLARS = [
+    { id:1, label:"Self-Care & Growth", icon:"🙏",    color:"#7C3AED" },
+    { id:2, label:"Fatherhood",         icon:"👨‍👧‍👦", color:"#059669" },
+    { id:3, label:"Swing Trading",      icon:"📈",    color:"#0284C7" },
+    { id:4, label:"Keredan",            icon:"🏠",    color:"#D97706" },
+    { id:5, label:"AI & Automation",    icon:"🤖",    color:"#DB2777" },
+  ];
+
+  const PROMPT = `You are Roldan's personal journal AI named Penelope. Roldan is a father of four children (three boys: Aleem Antonio, Kareem Roberto and Rauf Francisco, and a baby girl, Liana Angelly), husband to Kereza, swing trader, real estate entrepreneur (Keredan Home Solutions — Jacksonville FL and Puerto Rico), deeply rooted in faith, family, and personal growth. Puerto Rican, bilingual, Navy veteran, avid 5K/10K runner. Recently returned to Jacksonville FL after 15 months in Bishkek, Kyrgyzstan.
+
+Transform his raw spoken thoughts into a rich first-person autobiography-style journal entry.
+- Write in first person as Roldan
+- Preserve his authentic voice, warmth, cultural identity, spiritual depth
+- Never over-polish — keep it human, personal, real
+- Expand naturally but never invent specifics he didn't mention
+- End with a brief 1-sentence reflection or intention
+- Identify which pillars apply: 1)Self-Care & Personal Growth 2)Fatherhood 3)Swing Trading 4)Keredan Home Solutions 5)AI & Automation
+
+Respond ONLY with valid JSON, no markdown, no backticks:
+{"title":"short evocative title","entry":"full journal entry","pillars":[1,2],"mood":"one word"}`;
+
+  // ── STATE ────────────────────────────────────────────────
+  let entries = [];
+  let activeFilter = null;
+
+  // ── INIT ─────────────────────────────────────────────────
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  // ── AUTH (Firebase email + password, REST) ───────────────
+  const AUTH_KEY = "legado_auth";
+  let auth = null;   // { uid, email, idToken, refreshToken, exp }  or { uid, email, sdk:true }
+  let fbAuth = null, sdkUser = null;
+  try {
+    firebase.initializeApp({ apiKey: FB_API_KEY, authDomain: FB_PROJECT + ".firebaseapp.com", projectId: FB_PROJECT });
+    fbAuth = firebase.auth();
+  } catch(e) { console.error("Google sign-in unavailable", e); }
+
+  async function googleLogin() {
+    const err = document.getElementById("login-error");
+    err.style.display = "none";
+    if (!fbAuth) { err.textContent = "Google sign-in could not load. Use email and password."; err.style.display = "block"; return; }
+    try {
+      const r = await fbAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+      sdkUser = r.user;
+      auth = { uid: sdkUser.uid, email: sdkUser.email, sdk: true };
+      afterLogin();
+    } catch(e) {
+      if (e && e.code === "auth/popup-closed-by-user") return;
+      err.textContent = (e && e.code === "auth/unauthorized-domain")
+        ? "This website is not approved for Google sign-in yet (Firebase, Authentication, Settings, Authorized domains)."
+        : "Google sign-in did not work. Please try again or use email and password.";
+      err.style.display = "block";
+    }
+  }
+
+  function saveAuth() { try { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); } catch(e) {} }
+  function clearAuth() {
+    auth = null; sdkUser = null;
+    try { localStorage.removeItem(AUTH_KEY); } catch(e) {}
+    try { if (fbAuth) fbAuth.signOut(); } catch(e) {}
+  }
+
+  function authMsg(code) {
+    const c = String(code || "");
+    if (c.includes("INVALID_LOGIN_CREDENTIALS") || c.includes("INVALID_PASSWORD") || c.includes("EMAIL_NOT_FOUND")) return "Email or password is not correct.";
+    if (c.includes("TOO_MANY_ATTEMPTS")) return "Too many attempts. Please wait a few minutes and try again.";
+    if (c.includes("USER_DISABLED")) return "This account is disabled.";
+    return "Could not sign in. Please try again.";
+  }
+
+  async function signInWithPassword(email, password) {
+    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FB_API_KEY}`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, returnSecureToken: true })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(authMsg(d.error && d.error.message));
+    auth = { uid: d.localId, email: d.email, idToken: d.idToken, refreshToken: d.refreshToken,
+             exp: Date.now() + parseInt(d.expiresIn, 10) * 1000 };
+    saveAuth();
+  }
+
+  async function refreshAuth() {
+    const r = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FB_API_KEY}`, {
+      method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(auth.refreshToken)}`
+    });
+    const d = await r.json();
+    if (!r.ok) { const e = new Error("Session expired"); e.rejected = true; throw e; }
+    auth.idToken = d.id_token; auth.refreshToken = d.refresh_token;
+    auth.exp = Date.now() + parseInt(d.expires_in, 10) * 1000;
+    saveAuth();
+  }
+
+  async function getToken() {
+    if (!auth) throw new Error("Not signed in");
+    if (auth.sdk) return sdkUser.getIdToken();
+    if (Date.now() > auth.exp - 60000) await refreshAuth();
+    return auth.idToken;
+  }
+
+  async function restoreSession() {
+    if (fbAuth) {
+      const u = await new Promise(res => { const un = fbAuth.onAuthStateChanged(x => { un(); res(x); }); });
+      if (u) { sdkUser = u; auth = { uid: u.uid, email: u.email, sdk: true }; return true; }
+    }
+    try { auth = JSON.parse(localStorage.getItem(AUTH_KEY) || "null"); } catch(e) { auth = null; }
+    if (!auth || !auth.refreshToken) { auth = null; return false; }
+    try { await refreshAuth(); return true; }
+    catch(e) { if (e.rejected) clearAuth(); else auth = null; return false; }
+  }
+
+  async function doLogin() {
+    const email = document.getElementById("login-email").value.trim();
+    const pass  = document.getElementById("login-pass").value;
+    const err = document.getElementById("login-error");
+    const info = document.getElementById("login-info");
+    const btn = document.getElementById("login-btn");
+    err.style.display = "none"; info.style.display = "none";
+    if (!email || !pass) { err.textContent = "Please enter your email and password."; err.style.display = "block"; return; }
+    btn.disabled = true;
+    try {
+      await signInWithPassword(email, pass);
+      document.getElementById("login-pass").value = "";
+      afterLogin();
+    } catch(e) {
+      err.textContent = e.message; err.style.display = "block";
+    }
+    btn.disabled = false;
+  }
+
+  async function forgotPassword() {
+    const email = document.getElementById("login-email").value.trim();
+    const err = document.getElementById("login-error");
+    const info = document.getElementById("login-info");
+    err.style.display = "none"; info.style.display = "none";
+    if (!email) { err.textContent = "Type your email above first, then tap Forgot password."; err.style.display = "block"; return; }
+    try {
+      await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FB_API_KEY}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestType: "PASSWORD_RESET", email })
+      });
+    } catch(e) {}
+    info.textContent = "If that email has an account, a reset link is on its way.";
+    info.style.display = "block";
+  }
+
+  function signOut() {
+    if (!confirm("Sign out of Legado on this device?")) return;
+    clearAuth(); entries = [];
+    show("login");
+  }
+
+  function afterLogin() {
+    document.getElementById("user-line").textContent = auth ? "Signed in as " + auth.email : "";
+    if (!localStorage.getItem("legado_akey")) { show("setup"); return; }
+    show("capture");
+    loadEntries();
+  }
+
+  (async function init() {
+    if (await restoreSession()) afterLogin(); else show("login");
+  })();
+
+  // ── SETUP ────────────────────────────────────────────────
+  function saveSetup() {
+    const k = document.getElementById("anthropic-key-input").value.trim();
+    const err = document.getElementById("setup-error");
+    if (!k.startsWith("sk-ant-")) { err.textContent = "Please enter a valid key starting with sk-ant-"; err.style.display="block"; return; }
+    localStorage.setItem("legado_akey", k);
+    err.style.display = "none";
+    show("capture");
+    loadEntries();
+  }
+
+function exportEntries() {
+    if (!entries.length) { alert("No entries to export yet."); return; }
+    const data = { app: "Legado", version: APP_VERSION, exportDate: new Date().toISOString(), totalEntries: entries.length, entries: entries };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `legado-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function resetSetup() {  
+    if (!confirm("Reset your API key?")) return;
+    localStorage.removeItem("legado_akey");
+    show("setup");
+  }
+
+  // ── FIREBASE REST (private per-user folder: users/{uid}/entries) ──
+  function userBase() { return `${FS_ROOT}/users/${auth.uid}/entries`; }
+
+  async function fsFetch(url, opts) {
+    opts = opts || {};
+    const t = await getToken();
+    opts.headers = Object.assign({}, opts.headers || {}, { Authorization: "Bearer " + t });
+    return fetch(url, opts);
+  }
+
+  function parseDoc(doc) {
+    const f = doc.fields || {};
+    return {
+      id:      doc.name.split("/").pop(),
+      date:    f.date?.stringValue    || "",
+      title:   f.title?.stringValue   || "",
+      entry:   f.entry?.stringValue   || "",
+      raw:     f.raw?.stringValue     || "",
+      mood:    f.mood?.stringValue    || "",
+      pillars: (f.pillars?.arrayValue?.values || []).map(v => parseInt(v.integerValue || v.doubleValue || 0))
+    };
+  }
+
+  // Reads EVERY page of a collection (no 200 cap, no entries skipped)
+  async function listAllDocs(base) {
+    let docs = [], token = "";
+    do {
+      const url = `${base}?key=${FB_API_KEY}&pageSize=300` + (token ? `&pageToken=${encodeURIComponent(token)}` : "");
+      const r = await fsFetch(url);
+      if (!r.ok) throw new Error("Failed to load entries (" + r.status + ")");
+      const d = await r.json();
+      docs = docs.concat(d.documents || []);
+      token = d.nextPageToken || "";
+    } while (token);
+    return docs;
+  }
+
+  async function fbGet() {
+    const docs = await listAllDocs(userBase());
+    return docs.map(parseDoc).sort((a,b) => b.date.localeCompare(a.date));
+  }
+
+  async function fbAdd(data) {
+    const body = {
+      fields: {
+        date:    { stringValue: data.date },
+        title:   { stringValue: data.title },
+        entry:   { stringValue: data.entry },
+        raw:     { stringValue: data.raw },
+        mood:    { stringValue: data.mood },
+        pillars: { arrayValue: { values: (data.pillars || []).map(p => ({ integerValue: p })) } }
+      }
+    };
+    const r = await fsFetch(`${userBase()}?key=${FB_API_KEY}`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error("Failed to save entry");
+    const d = await r.json();
+    return d.name.split("/").pop();
+  }
+
+  async function fbDelete(id) {
+    const r = await fsFetch(`${userBase()}/${id}?key=${FB_API_KEY}`, { method: "DELETE" });
+    if (!r.ok) throw new Error("Failed to delete entry");
+  }
+
+  // One-time: COPY entries from the old shared folder into this account's private folder.
+  // Nothing is deleted. Safe to run more than once (same entry id = same entry).
+  async function migrateOld() {
+    const msg = document.getElementById("journal-msg");
+    if (!confirm("Copy your old entries into your private account? Nothing will be deleted.")) return;
+    msg.textContent = "Copying…";
+    try {
+      const oldDocs = await listAllDocs(`${FS_ROOT}/entries`);
+      let copied = 0;
+      for (const doc of oldDocs) {
+        const id = doc.name.split("/").pop();
+        const r = await fsFetch(`${userBase()}/${id}?key=${FB_API_KEY}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fields: doc.fields || {} })
+        });
+        if (!r.ok) throw new Error("Copy failed on an entry (" + r.status + ")");
+        copied++;
+      }
+      entries = await fbGet();
+      renderJournal();
+      msg.textContent = `Old folder: ${oldDocs.length} · Copied: ${copied} · Now in your journal: ${entries.length}`;
+    } catch(e) {
+      msg.textContent = "Could not copy: " + e.message + " (If the old folder is already locked, that is expected.)";
+    }
+  }
+
+  // ── LOAD ENTRIES ──────────────────────────────────────────
+  async function loadEntries() {
+    const errEl = document.getElementById("journal-error");
+    try {
+      entries = await fbGet();
+      errEl.style.display = "none";
+    } catch(e) {
+      console.error(e);
+      errEl.textContent = "Could not load your entries right now. Your journal is safe. Check your connection and reopen the Journal tab.";
+      errEl.style.display = "block";
+      if (!entries.length) { document.getElementById("entries-list").innerHTML = ""; document.getElementById("entry-count").textContent = ""; return; }
+    }
+    renderJournal();
+  }
+
+  // ── RENDER JOURNAL ────────────────────────────────────────
+  function renderJournal() {
+    document.getElementById("entry-count").textContent =
+      `${entries.length} ${entries.length===1?"entry":"entries"}`;
+
+    const fEl = document.getElementById("pillars-filter");
+    fEl.innerHTML = `<span class="ptag" onclick="setFilter(null)"
+      style="${!activeFilter?'background:rgba(255,255,255,0.2);color:#fff':''}">All</span>`;
+    PILLARS.forEach(p => {
+      fEl.innerHTML += `<span class="ptag" onclick="setFilter(${p.id})"
+        style="background:${activeFilter===p.id?p.color+'55':'rgba(255,255,255,0.06)'};
+               color:${activeFilter===p.id?'#fff':'#ccc'};
+               border-color:${activeFilter===p.id?p.color:'transparent'}">${p.icon} ${p.label}</span>`;
+    });
+
+    const list = document.getElementById("entries-list");
+    const filtered = activeFilter ? entries.filter(e => e.pillars?.includes(activeFilter)) : entries;
+
+    if (!filtered.length) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">📖</div>
+        <p>${entries.length===0?"Your journal awaits its first entry.":"No entries for this pillar yet."}</p></div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map(e => {
+      const tags = (e.pillars||[]).map(pid => {
+        const p = PILLARS.find(x=>x.id===pid);
+        return p?`<span class="tag" style="background:${p.color}33;color:${p.color}">${p.icon} ${p.label}</span>`:'';
+      }).join('');
+      const date = new Date(e.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+      return `<div class="entry-card" onclick="showEntry('${esc(e.id)}')">
+        <div class="ec-header"><span class="ec-title">${esc(e.title)}</span><span class="ec-date">${date}</span></div>
+        <p class="ec-preview">${esc((e.entry||'').slice(0,120))}...</p>
+        <div class="tags">${tags}<span class="mood">${esc(e.mood||'')}</span></div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── SHOW ENTRY ────────────────────────────────────────────
+  function showEntry(id) {
+    const e = entries.find(x=>x.id===id);
+    if (!e) return;
+    const tags = (e.pillars||[]).map(pid => {
+      const p = PILLARS.find(x=>x.id===pid);
+      return p?`<span class="tag" style="background:${p.color}33;color:${p.color};margin-right:4px">${p.icon} ${p.label}</span>`:'';
+    }).join('');
+    const date = new Date(e.date).toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+    document.getElementById("entry-detail").innerHTML = `
+      <p class="entry-meta">${date} · ${esc(e.mood||'')}</p>
+      <h2 class="entry-title">${esc(e.title)}</h2>
+      <div style="margin-bottom:1.2rem">${tags}</div>
+      <div class="entry-body">${esc(e.entry)}</div>
+      <details><summary>View original raw thought</summary>
+        <p class="raw-text">${esc(e.raw)}</p></details>
+      <button class="danger-btn" onclick="deleteEntry('${esc(e.id)}')">🗑 Delete entry</button>`;
+    show('entry');
+  }
+
+  // ── DELETE ────────────────────────────────────────────────
+  async function deleteEntry(id) {
+    if (!confirm("Delete this entry permanently?")) return;
+    try { await fbDelete(id); entries = entries.filter(e=>e.id!==id); renderJournal(); show('journal'); }
+    catch(e) { alert("Could not delete. Please try again."); }
+  }
+
+  // ── FILTER ────────────────────────────────────────────────
+  function setFilter(pid) { activeFilter = pid; renderJournal(); }
+
+  // ── TRANSFORM ────────────────────────────────────────────
+  async function transformThought() {
+    const raw = document.getElementById("raw-input").value.trim();
+    if (!raw) return;
+    const aKey = localStorage.getItem("legado_akey");
+    if (!aKey) { resetSetup(); return; }
+
+    const btn = document.getElementById("transform-btn");
+    const errEl = document.getElementById("capture-error");
+    errEl.style.display = "none";
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Penelope is writing your entry...';
+
+    try {
+      const res = await fetch("https://legado-proxy.roldan-crespo-ai.workers.dev/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": aKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-request-header": "true"
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-5",
+          max_tokens: 2000,
+          system: PROMPT,
+          messages: [{ role:"user", content:raw }]
+        })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      const text = (data.content||[]).map(b=>b.text||"").join("");
+      const parsed = JSON.parse(text.replace(/```json|```/g,"").trim());
+
+      const entry = {
+        date: new Date().toISOString(),
+        raw, title: parsed.title, entry: parsed.entry,
+        pillars: parsed.pillars, mood: parsed.mood
+      };
+
+      const id = await fbAdd(entry);
+      const saved = { id, ...entry };
+      entries.unshift(saved);
+      document.getElementById("raw-input").value = "";
+      renderJournal();
+      showEntry(id);
+    } catch(e) {
+      console.error(e);
+      errEl.textContent = "Something went wrong: " + e.message;
+      errEl.style.display = "block";
+    }
+    btn.disabled = false;
+    btn.innerHTML = "✨ Transform into Journal Entry";
+  }
+
+  // ── NAVIGATION ────────────────────────────────────────────
+  function show(name) {
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById(`screen-${name}`).classList.add('active');
+    document.getElementById("bottom-nav").style.display = (name==='login'||name==='setup') ? 'none' : 'flex';
+    const nb = document.getElementById(`nav-${name}`);
+    if (nb) nb.classList.add('active');
+    if (name==='journal') loadEntries();
+    window.scrollTo(0,0);
+  }
+</script>
+</body>
+</html>
