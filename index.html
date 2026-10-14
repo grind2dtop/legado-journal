@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />claude-sonnet-5
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Legado — Living Journal</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -30,7 +30,7 @@
     .card h2 { font-size: 1.3rem; margin-bottom: 0.5rem; }
     .card p { color: #a89fc0; font-size: 0.9rem; line-height: 1.7; margin-bottom: 1rem; }
 
-    input[type="password"], input[type="text"], textarea {
+    input[type="password"], input[type="text"], input[type="email"], textarea {
       width: 100%;
       background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.2);
@@ -148,11 +148,34 @@
     .bnav-btn.active { color: #DB2777; }
     .bnav-btn span:first-child { font-size: 1.3rem; }
   </style>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 </head>
 <body>
 
+<!-- LOGIN SCREEN -->
+<div id="screen-login" class="screen active">
+  <div class="header">
+    <div style="font-size:2.2rem">📖</div>
+    <h1>Legado</h1>
+    <p>Your Living Journal</p>
+  </div>
+  <div class="card">
+    <h2>🔐 Sign In</h2>
+    <p>Your journal is private. Sign in to open it.</p>
+    <button class="primary-btn" id="google-btn" onclick="googleLogin()" style="margin-top:0">Continue with Google</button>
+    <p class="note" style="text-align:center;margin:0.8rem 0 0.4rem">or use email and password</p>
+    <input type="email" id="login-email" placeholder="Email" autocomplete="username" />
+    <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="primary-btn" id="login-btn" onclick="doLogin()">Sign In →</button>
+    <p id="login-error" class="error-msg" style="display:none"></p>
+    <p id="login-info" class="note" style="display:none"></p>
+    <button class="link-btn" onclick="forgotPassword()">Forgot password?</button>
+  </div>
+</div>
+
 <!-- SETUP SCREEN -->
-<div id="screen-setup" class="screen active">
+<div id="screen-setup" class="screen">
   <div class="header">
     <div style="font-size:2.2rem">📖</div>
     <h1>Legado</h1>
@@ -181,6 +204,7 @@
     <p id="capture-error" class="error-msg" style="display:none"></p>
     <button class="primary-btn" id="transform-btn" onclick="transformThought()">✨ Transform into Journal Entry</button>
     <button class="link-btn" onclick="resetSetup()">Reset API key</button>
+    <button class="link-btn" onclick="signOut()">Sign out</button>
   </div>
 </div>
 
@@ -189,9 +213,13 @@
   <div class="header">
     <h1>📚 Your Journal</h1>
    <p id="entry-count"></p>
+   <p id="user-line" class="note"></p>
 <button onclick="exportEntries()" style="margin-top:0.8rem;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#a89fc0;padding:0.4rem 1rem;border-radius:20px;cursor:pointer;font-family:Georgia,serif;font-size:0.8rem;">⬇️ Export Backup (.json)</button>
+<button onclick="migrateOld()" style="margin-top:0.8rem;margin-left:0.4rem;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#a89fc0;padding:0.4rem 1rem;border-radius:20px;cursor:pointer;font-family:Georgia,serif;font-size:0.8rem;">⬆️ Copy old entries (one-time)</button>
+<p id="journal-msg" class="note" style="margin-top:0.6rem"></p>
   </div>
   <div class="pillars-filter" id="pillars-filter"></div>
+  <p id="journal-error" class="error-msg" style="display:none;text-align:center"></p>
   <div id="entries-list"></div>
 </div>
 
@@ -218,7 +246,8 @@
   // ── CONFIG ──────────────────────────────────────────────
   const FB_PROJECT = "legado-journal";
   const FB_API_KEY = "AIzaSyCx5GwMbTL7wCoC4TcXPLGXxvrAt7ewf7Q"; // ← replace with your Firebase key
-  const FB_BASE    = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents/entries`;
+  const FS_ROOT    = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents`;
+  const APP_VERSION = "2.0";
 
   const PILLARS = [
     { id:1, label:"Self-Care & Growth", icon:"🙏",    color:"#7C3AED" },
@@ -228,7 +257,7 @@
     { id:5, label:"AI & Automation",    icon:"🤖",    color:"#DB2777" },
   ];
 
-  const PROMPT = `You are Roldan's personal journal AI named Penelope. Roldan is a father of 3 boys and a baby girl, husband to Kereza, swing trader, real estate entrepreneur (Keredan Home Solutions — Jacksonville FL and Puerto Rico), deeply rooted in faith, family, and personal growth. Puerto Rican, bilingual, Navy veteran, avid 5K/10K runner. Recently returned to Jacksonville FL after 15 months in Bishkek, Kyrgyzstan.
+  const PROMPT = `You are Roldan's personal journal AI named Penelope. Roldan is a father of four children (three boys: Aleem Antonio, Kareem Roberto and Rauf Francisco, and a baby girl, Liana Angelly), husband to Kereza, swing trader, real estate entrepreneur (Keredan Home Solutions — Jacksonville FL and Puerto Rico), deeply rooted in faith, family, and personal growth. Puerto Rican, bilingual, Navy veteran, avid 5K/10K runner. Recently returned to Jacksonville FL after 15 months in Bishkek, Kyrgyzstan.
 
 Transform his raw spoken thoughts into a rich first-person autobiography-style journal entry.
 - Write in first person as Roldan
@@ -246,8 +275,145 @@ Respond ONLY with valid JSON, no markdown, no backticks:
   let activeFilter = null;
 
   // ── INIT ─────────────────────────────────────────────────
-  const aKey = localStorage.getItem("legado_akey");
-  if (aKey) { document.getElementById("bottom-nav").style.display = "flex"; show("capture"); loadEntries(); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  // ── AUTH (Firebase email + password, REST) ───────────────
+  const AUTH_KEY = "legado_auth";
+  let auth = null;   // { uid, email, idToken, refreshToken, exp }  or { uid, email, sdk:true }
+  let fbAuth = null, sdkUser = null;
+  try {
+    firebase.initializeApp({ apiKey: FB_API_KEY, authDomain: FB_PROJECT + ".firebaseapp.com", projectId: FB_PROJECT });
+    fbAuth = firebase.auth();
+  } catch(e) { console.error("Google sign-in unavailable", e); }
+
+  async function googleLogin() {
+    const err = document.getElementById("login-error");
+    err.style.display = "none";
+    if (!fbAuth) { err.textContent = "Google sign-in could not load. Use email and password."; err.style.display = "block"; return; }
+    try {
+      const r = await fbAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+      sdkUser = r.user;
+      auth = { uid: sdkUser.uid, email: sdkUser.email, sdk: true };
+      afterLogin();
+    } catch(e) {
+      if (e && e.code === "auth/popup-closed-by-user") return;
+      err.textContent = (e && e.code === "auth/unauthorized-domain")
+        ? "This website is not approved for Google sign-in yet (Firebase, Authentication, Settings, Authorized domains)."
+        : "Google sign-in did not work. Please try again or use email and password.";
+      err.style.display = "block";
+    }
+  }
+
+  function saveAuth() { try { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); } catch(e) {} }
+  function clearAuth() {
+    auth = null; sdkUser = null;
+    try { localStorage.removeItem(AUTH_KEY); } catch(e) {}
+    try { if (fbAuth) fbAuth.signOut(); } catch(e) {}
+  }
+
+  function authMsg(code) {
+    const c = String(code || "");
+    if (c.includes("INVALID_LOGIN_CREDENTIALS") || c.includes("INVALID_PASSWORD") || c.includes("EMAIL_NOT_FOUND")) return "Email or password is not correct.";
+    if (c.includes("TOO_MANY_ATTEMPTS")) return "Too many attempts. Please wait a few minutes and try again.";
+    if (c.includes("USER_DISABLED")) return "This account is disabled.";
+    return "Could not sign in. Please try again.";
+  }
+
+  async function signInWithPassword(email, password) {
+    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FB_API_KEY}`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, returnSecureToken: true })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(authMsg(d.error && d.error.message));
+    auth = { uid: d.localId, email: d.email, idToken: d.idToken, refreshToken: d.refreshToken,
+             exp: Date.now() + parseInt(d.expiresIn, 10) * 1000 };
+    saveAuth();
+  }
+
+  async function refreshAuth() {
+    const r = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FB_API_KEY}`, {
+      method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(auth.refreshToken)}`
+    });
+    const d = await r.json();
+    if (!r.ok) { const e = new Error("Session expired"); e.rejected = true; throw e; }
+    auth.idToken = d.id_token; auth.refreshToken = d.refresh_token;
+    auth.exp = Date.now() + parseInt(d.expires_in, 10) * 1000;
+    saveAuth();
+  }
+
+  async function getToken() {
+    if (!auth) throw new Error("Not signed in");
+    if (auth.sdk) return sdkUser.getIdToken();
+    if (Date.now() > auth.exp - 60000) await refreshAuth();
+    return auth.idToken;
+  }
+
+  async function restoreSession() {
+    if (fbAuth) {
+      const u = await new Promise(res => { const un = fbAuth.onAuthStateChanged(x => { un(); res(x); }); });
+      if (u) { sdkUser = u; auth = { uid: u.uid, email: u.email, sdk: true }; return true; }
+    }
+    try { auth = JSON.parse(localStorage.getItem(AUTH_KEY) || "null"); } catch(e) { auth = null; }
+    if (!auth || !auth.refreshToken) { auth = null; return false; }
+    try { await refreshAuth(); return true; }
+    catch(e) { if (e.rejected) clearAuth(); else auth = null; return false; }
+  }
+
+  async function doLogin() {
+    const email = document.getElementById("login-email").value.trim();
+    const pass  = document.getElementById("login-pass").value;
+    const err = document.getElementById("login-error");
+    const info = document.getElementById("login-info");
+    const btn = document.getElementById("login-btn");
+    err.style.display = "none"; info.style.display = "none";
+    if (!email || !pass) { err.textContent = "Please enter your email and password."; err.style.display = "block"; return; }
+    btn.disabled = true;
+    try {
+      await signInWithPassword(email, pass);
+      document.getElementById("login-pass").value = "";
+      afterLogin();
+    } catch(e) {
+      err.textContent = e.message; err.style.display = "block";
+    }
+    btn.disabled = false;
+  }
+
+  async function forgotPassword() {
+    const email = document.getElementById("login-email").value.trim();
+    const err = document.getElementById("login-error");
+    const info = document.getElementById("login-info");
+    err.style.display = "none"; info.style.display = "none";
+    if (!email) { err.textContent = "Type your email above first, then tap Forgot password."; err.style.display = "block"; return; }
+    try {
+      await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FB_API_KEY}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestType: "PASSWORD_RESET", email })
+      });
+    } catch(e) {}
+    info.textContent = "If that email has an account, a reset link is on its way.";
+    info.style.display = "block";
+  }
+
+  function signOut() {
+    if (!confirm("Sign out of Legado on this device?")) return;
+    clearAuth(); entries = [];
+    show("login");
+  }
+
+  function afterLogin() {
+    document.getElementById("user-line").textContent = auth ? "Signed in as " + auth.email : "";
+    if (!localStorage.getItem("legado_akey")) { show("setup"); return; }
+    show("capture");
+    loadEntries();
+  }
+
+  (async function init() {
+    if (await restoreSession()) afterLogin(); else show("login");
+  })();
 
   // ── SETUP ────────────────────────────────────────────────
   function saveSetup() {
@@ -256,14 +422,13 @@ Respond ONLY with valid JSON, no markdown, no backticks:
     if (!k.startsWith("sk-ant-")) { err.textContent = "Please enter a valid key starting with sk-ant-"; err.style.display="block"; return; }
     localStorage.setItem("legado_akey", k);
     err.style.display = "none";
-    document.getElementById("bottom-nav").style.display = "flex";
     show("capture");
     loadEntries();
   }
 
 function exportEntries() {
     if (!entries.length) { alert("No entries to export yet."); return; }
-    const data = { exportDate: new Date().toISOString(), totalEntries: entries.length, entries: entries };
+    const data = { app: "Legado", version: APP_VERSION, exportDate: new Date().toISOString(), totalEntries: entries.length, entries: entries };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -278,28 +443,49 @@ function exportEntries() {
   function resetSetup() {  
     if (!confirm("Reset your API key?")) return;
     localStorage.removeItem("legado_akey");
-    document.getElementById("bottom-nav").style.display = "none";
     show("setup");
   }
 
-  // ── FIREBASE REST ─────────────────────────────────────────
+  // ── FIREBASE REST (private per-user folder: users/{uid}/entries) ──
+  function userBase() { return `${FS_ROOT}/users/${auth.uid}/entries`; }
+
+  async function fsFetch(url, opts) {
+    opts = opts || {};
+    const t = await getToken();
+    opts.headers = Object.assign({}, opts.headers || {}, { Authorization: "Bearer " + t });
+    return fetch(url, opts);
+  }
+
+  function parseDoc(doc) {
+    const f = doc.fields || {};
+    return {
+      id:      doc.name.split("/").pop(),
+      date:    f.date?.stringValue    || "",
+      title:   f.title?.stringValue   || "",
+      entry:   f.entry?.stringValue   || "",
+      raw:     f.raw?.stringValue     || "",
+      mood:    f.mood?.stringValue    || "",
+      pillars: (f.pillars?.arrayValue?.values || []).map(v => parseInt(v.integerValue || v.doubleValue || 0))
+    };
+  }
+
+  // Reads EVERY page of a collection (no 200 cap, no entries skipped)
+  async function listAllDocs(base) {
+    let docs = [], token = "";
+    do {
+      const url = `${base}?key=${FB_API_KEY}&pageSize=300` + (token ? `&pageToken=${encodeURIComponent(token)}` : "");
+      const r = await fsFetch(url);
+      if (!r.ok) throw new Error("Failed to load entries (" + r.status + ")");
+      const d = await r.json();
+      docs = docs.concat(d.documents || []);
+      token = d.nextPageToken || "";
+    } while (token);
+    return docs;
+  }
+
   async function fbGet() {
-    const r = await fetch(`${FB_BASE}?key=${FB_API_KEY}&orderBy=date&pageSize=200`);
-    if (!r.ok) throw new Error("Failed to load entries");
-    const d = await r.json();
-    return (d.documents || []).map(doc => {
-      const f = doc.fields || {};
-      const id = doc.name.split("/").pop();
-      return {
-        id,
-        date:    f.date?.stringValue    || "",
-        title:   f.title?.stringValue   || "",
-        entry:   f.entry?.stringValue   || "",
-        raw:     f.raw?.stringValue     || "",
-        mood:    f.mood?.stringValue    || "",
-        pillars: (f.pillars?.arrayValue?.values || []).map(v => parseInt(v.integerValue || v.doubleValue || 0))
-      };
-    }).sort((a,b) => b.date.localeCompare(a.date));
+    const docs = await listAllDocs(userBase());
+    return docs.map(parseDoc).sort((a,b) => b.date.localeCompare(a.date));
   }
 
   async function fbAdd(data) {
@@ -310,10 +496,10 @@ function exportEntries() {
         entry:   { stringValue: data.entry },
         raw:     { stringValue: data.raw },
         mood:    { stringValue: data.mood },
-        pillars: { arrayValue: { values: data.pillars.map(p => ({ integerValue: p })) } }
+        pillars: { arrayValue: { values: (data.pillars || []).map(p => ({ integerValue: p })) } }
       }
     };
-    const r = await fetch(`${FB_BASE}?key=${FB_API_KEY}`, {
+    const r = await fsFetch(`${userBase()}?key=${FB_API_KEY}`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
@@ -323,13 +509,48 @@ function exportEntries() {
   }
 
   async function fbDelete(id) {
-    const r = await fetch(`${FB_BASE}/${id}?key=${FB_API_KEY}`, { method: "DELETE" });
+    const r = await fsFetch(`${userBase()}/${id}?key=${FB_API_KEY}`, { method: "DELETE" });
     if (!r.ok) throw new Error("Failed to delete entry");
+  }
+
+  // One-time: COPY entries from the old shared folder into this account's private folder.
+  // Nothing is deleted. Safe to run more than once (same entry id = same entry).
+  async function migrateOld() {
+    const msg = document.getElementById("journal-msg");
+    if (!confirm("Copy your old entries into your private account? Nothing will be deleted.")) return;
+    msg.textContent = "Copying…";
+    try {
+      const oldDocs = await listAllDocs(`${FS_ROOT}/entries`);
+      let copied = 0;
+      for (const doc of oldDocs) {
+        const id = doc.name.split("/").pop();
+        const r = await fsFetch(`${userBase()}/${id}?key=${FB_API_KEY}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fields: doc.fields || {} })
+        });
+        if (!r.ok) throw new Error("Copy failed on an entry (" + r.status + ")");
+        copied++;
+      }
+      entries = await fbGet();
+      renderJournal();
+      msg.textContent = `Old folder: ${oldDocs.length} · Copied: ${copied} · Now in your journal: ${entries.length}`;
+    } catch(e) {
+      msg.textContent = "Could not copy: " + e.message + " (If the old folder is already locked, that is expected.)";
+    }
   }
 
   // ── LOAD ENTRIES ──────────────────────────────────────────
   async function loadEntries() {
-    try { entries = await fbGet(); } catch(e) { entries = []; }
+    const errEl = document.getElementById("journal-error");
+    try {
+      entries = await fbGet();
+      errEl.style.display = "none";
+    } catch(e) {
+      console.error(e);
+      errEl.textContent = "Could not load your entries right now. Your journal is safe. Check your connection and reopen the Journal tab.";
+      errEl.style.display = "block";
+      if (!entries.length) { document.getElementById("entries-list").innerHTML = ""; document.getElementById("entry-count").textContent = ""; return; }
+    }
     renderJournal();
   }
 
@@ -363,10 +584,10 @@ function exportEntries() {
         return p?`<span class="tag" style="background:${p.color}33;color:${p.color}">${p.icon} ${p.label}</span>`:'';
       }).join('');
       const date = new Date(e.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-      return `<div class="entry-card" onclick="showEntry('${e.id}')">
-        <div class="ec-header"><span class="ec-title">${e.title}</span><span class="ec-date">${date}</span></div>
-        <p class="ec-preview">${(e.entry||'').slice(0,120)}...</p>
-        <div class="tags">${tags}<span class="mood">${e.mood||''}</span></div>
+      return `<div class="entry-card" onclick="showEntry('${esc(e.id)}')">
+        <div class="ec-header"><span class="ec-title">${esc(e.title)}</span><span class="ec-date">${date}</span></div>
+        <p class="ec-preview">${esc((e.entry||'').slice(0,120))}...</p>
+        <div class="tags">${tags}<span class="mood">${esc(e.mood||'')}</span></div>
       </div>`;
     }).join('');
   }
@@ -381,13 +602,13 @@ function exportEntries() {
     }).join('');
     const date = new Date(e.date).toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
     document.getElementById("entry-detail").innerHTML = `
-      <p class="entry-meta">${date} · ${e.mood||''}</p>
-      <h2 class="entry-title">${e.title}</h2>
+      <p class="entry-meta">${date} · ${esc(e.mood||'')}</p>
+      <h2 class="entry-title">${esc(e.title)}</h2>
       <div style="margin-bottom:1.2rem">${tags}</div>
-      <div class="entry-body">${e.entry}</div>
+      <div class="entry-body">${esc(e.entry)}</div>
       <details><summary>View original raw thought</summary>
-        <p class="raw-text">${e.raw}</p></details>
-      <button class="danger-btn" onclick="deleteEntry('${e.id}')">🗑 Delete entry</button>`;
+        <p class="raw-text">${esc(e.raw)}</p></details>
+      <button class="danger-btn" onclick="deleteEntry('${esc(e.id)}')">🗑 Delete entry</button>`;
     show('entry');
   }
 
@@ -461,6 +682,7 @@ function exportEntries() {
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
     document.getElementById(`screen-${name}`).classList.add('active');
+    document.getElementById("bottom-nav").style.display = (name==='login'||name==='setup') ? 'none' : 'flex';
     const nb = document.getElementById(`nav-${name}`);
     if (nb) nb.classList.add('active');
     if (name==='journal') loadEntries();
